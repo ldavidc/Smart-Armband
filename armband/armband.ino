@@ -1,18 +1,21 @@
 #include <Adafruit_NeoPixel.h>
 
-const int buttonPin = 0;
+const int buttonPin = 2;
 
 const int LEDPin = 6;
 const int numPixels = 6; // Length of LED strip
+const int brightness = 150;
 
-const int temperaturePin = O; // AO
+const int temperaturePin = 1; // AO
 const int lowTemps[4] = {40, 30, 20, 10}; // Fahrenheit, increasing in severity
 const int highTemps[4] = {70, 80, 90, 100}; // Fahrenheit, increasing in severity
 
 const int UVPin = 1; // A1
 const int UVThresholds[4] = {3, 5, 7, 9}; // UV index, increasing in severity
 
-int temperature, UV;
+int temperature, UV = 55; // Default values in the middle of the range
+int timer = 0;
+const int timerPeriod = 1000;
 int mode = 0;
 
 Adafruit_NeoPixel pixels(numPixels, LEDPin, NEO_GRB + NEO_KHZ800); // Initialize pixels
@@ -28,12 +31,14 @@ void setup() {
     pinMode(UVPin, INPUT);
 
     pixels.begin(); // Initialize the NeoPixel strip
+    pixels.setBrightness(brightness); // Turn down brightness because it's too bright otherwise
 }
 
 void loop() {
     readSensors();
     displayUV();
     displayTemperature();
+    Serial.println(mode);
 
     if(digitalRead(buttonPin) == HIGH) {
         if (mode == 11) {
@@ -41,6 +46,13 @@ void loop() {
         } else {
             mode += 1;
         }
+        delay(500);
+    }
+
+    if (timer > timerPeriod) {
+        timer = 0;
+    } else {
+        timer += 1;
     }
 }
 
@@ -56,39 +68,51 @@ void readSensors() {
         case 0: 
             temperature = 5;
             UV = 1;
+            break;
         case 1: 
             temperature = 15;
             UV = 2;
+            break;
         case 2: 
             temperature = 25;
             UV = 3;
+            break;
         case 3: 
             temperature = 35;
             UV = 4;
+            break;
         case 4:
             temperature = 45;
             UV = 5;
+            break;
         case 5:
             temperature = 55;
             UV = 6;
+            break;
         case 6:
             temperature = 65;
             UV = 7;
+            break;
         case 7: 
             temperature = 75;
             UV = 8;
+            break;
         case 8:     
             temperature = 85;
             UV = 9;
+            break;
         case 9:     
             temperature = 95;
             UV = 10;
+            break;
         case 10:     
             temperature = 105;
             UV = 11;
+            break;
         case 11:     
             temperature = 115;
             UV = 12;
+            break;
     }
 
     Serial.print("Temperature: ");
@@ -169,12 +193,16 @@ void displayTemperature() {
 }
 
 void flashColor(int startIndex, int endIndex, int r, int g, int b) {
-    for (int i = startIndex; i < endIndex; i++) {
-        pixels.setPixelColor(i, pixels.Color(r, g, b)); // Set color
-        pixels.show(); // Update the strip
-        delay(500); // Wait for 500 milliseconds
-        pixels.setPixelColor(i, pixels.Color(0, 0, 0)); // Turn off the pixel
-        pixels.show(); // Update the strip
+    if(timer < 500) {
+        for (int i = startIndex; i < endIndex; i++) {
+            pixels.setPixelColor(i, pixels.Color(r, g, b)); // Set color
+            pixels.show(); // Update the strip
+        }
+    } else {
+        for (int i = startIndex; i < endIndex; i++) {
+            pixels.setPixelColor(i, pixels.Color(0, 0, 0)); // Turn off the pixel
+            pixels.show(); // Update the strip
+        }
     }
 }
  
