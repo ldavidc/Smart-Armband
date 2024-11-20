@@ -2,20 +2,26 @@
 
 const int LEDPin = 6;
 const int numPixels = 6; // Length of LED strip
+const int brightness = 20;
 
-const int temperaturePin = O; // AO
+const int temperaturePin = 1; // A1
 const int lowTemps[4] = {40, 30, 20, 10}; // Fahrenheit, increasing in severity
 const int highTemps[4] = {70, 80, 90, 100}; // Fahrenheit, increasing in severity
 
-const int UVPin = 1; // A1
+const int UVPin = 2; // A2
 const int UVThresholds[4] = {3, 5, 7, 9}; // UV index, increasing in severity
 
-int temperature, UV;
+int temperature, UV = 55; // Default values in the middle of the range
+int timer = 0;
+const int timerPeriod = 10;
+int mode = 0;
 
 Adafruit_NeoPixel pixels(numPixels, LEDPin, NEO_GRB + NEO_KHZ800); // Initialize pixels
 
 void setup() {
     Serial.begin(9600);
+
+    //Set power pins for the sensors
 
     //Set the pin modes for the output(LEDS) and input(temperature and UV sensors)
     pinMode(LEDPin, OUTPUT);
@@ -23,12 +29,19 @@ void setup() {
     pinMode(UVPin, INPUT);
 
     pixels.begin(); // Initialize the NeoPixel strip
+    pixels.setBrightness(brightness); // Turn down brightness because it's too bright otherwise
 }
 
 void loop() {
     readSensors();
     displayUV();
     displayTemperature();
+
+    if (timer > timerPeriod) {
+        timer = 0;
+    } else {
+        timer += 1;
+    }
 }
 
 // Read the temperature and UV sensors
@@ -48,10 +61,15 @@ void readSensors() {
 }
 
 void displayUV() {
+    // Clear UV pixels
+    for (int i = 0; i < numPixels / 2; i++) {
+            pixels.setPixelColor(i, pixels.Color(0, 0, 0)); // Turn off all pixels
+    }
+
     // Light up a purple pixel for each UV threshold
     if (UV > UVThresholds[0]) {
         pixels.setPixelColor(0, pixels.Color(88, 77, 100)); // Light purple first pixel
-    }
+    } 
 
     if (UV > UVThresholds[1]) {
         pixels.setPixelColor(1, pixels.Color(75, 47, 96)); // Medium purple second pixel
@@ -69,13 +87,18 @@ void displayUV() {
 }
 
 void displayTemperature() {
+    // Clear temperature pixels
+    for (int i = numPixels / 2; i < numPixels; i++) {
+        pixels.setPixelColor(i, pixels.Color(0, 0, 0)); // Turn off all pixels
+    }
+
     // Light up a blue pixel for each low temperature threshold
     if (temperature < lowTemps[0]) {
         pixels.setPixelColor(numPixels / 2, pixels.Color(173, 216, 230)); // Light blue first pixel
-    }
+    } 
 
     if (temperature < lowTemps[1]) {
-        pixels.setPIxelColor(numPixels / 2 + 1, pixels.Color(90, 147, 219)); // Medium blue second pixel
+        pixels.setPixelColor(numPixels / 2 + 1, pixels.Color(90, 147, 219)); // Medium blue second pixel
     }
 
     if (temperature < lowTemps[2]) {
@@ -107,12 +130,14 @@ void displayTemperature() {
 }
 
 void flashColor(int startIndex, int endIndex, int r, int g, int b) {
-    for (int i = startIndex; i < endIndex; i++) {
-        pixels.setPixelColor(i, pixels.Color(r, g, b)); // Set color
-        pixels.show(); // Update the strip
-        delay(500); // Wait for 500 milliseconds
-        pixels.setPixelColor(i, pixels.Color(0, 0, 0)); // Turn off the pixel
-        pixels.show(); // Update the strip
+    if(timer < timerPeriod/2) {
+        for (int i = startIndex; i < endIndex; i++) {
+            pixels.setPixelColor(i, pixels.Color(r, g, b)); // Set color
+        }
+    } else {
+        for (int i = startIndex; i < endIndex; i++) {
+            pixels.setPixelColor(i, pixels.Color(0, 0, 0)); // Turn off the pixel
+        }
     }
 }
  
