@@ -21,9 +21,9 @@ Adafruit_NeoPixel pixels(numPixels, LEDPin, NEO_GRB + NEO_KHZ800); // Initialize
 void setup() {
     Serial.begin(9600);
 
-    //Set power pins for the sensors
+    // Set power pins for the sensors
 
-    //Set the pin modes for the output(LEDS) and input(temperature and UV sensors)
+    // Set the pin modes for the output(LEDS) and input(temperature and UV sensors)
     pinMode(LEDPin, OUTPUT);
     pinMode(temperaturePin, INPUT);
     pinMode(UVPin, INPUT);
@@ -47,10 +47,10 @@ void loop() {
 // Read the temperature and UV sensors
 void readSensors() {
     temperature = analogRead(temperaturePin);
-    //Unit conversion
+    // Unit conversion
 
     UV = analogRead(UVPin);
-    //Unit conversion
+    // Unit conversion
 
     Serial.print("Temperature: ");
     Serial.print(temperature);
