@@ -1,21 +1,21 @@
 #include <Adafruit_NeoPixel.h>
 
-const int buttonPin = 2;
+const int potentiometerPin = 3;
 
 const int LEDPin = 6;
 const int numPixels = 6; // Length of LED strip
-const int brightness = 150;
+const int brightness = 20;
 
-const int temperaturePin = 1; // AO
+const int temperaturePin = 1; // A1
 const int lowTemps[4] = {40, 30, 20, 10}; // Fahrenheit, increasing in severity
 const int highTemps[4] = {70, 80, 90, 100}; // Fahrenheit, increasing in severity
 
-const int UVPin = 1; // A1
+const int UVPin = 2; // A2
 const int UVThresholds[4] = {3, 5, 7, 9}; // UV index, increasing in severity
 
 int temperature, UV = 55; // Default values in the middle of the range
 int timer = 0;
-const int timerPeriod = 1000;
+const int timerPeriod = 10;
 int mode = 0;
 
 Adafruit_NeoPixel pixels(numPixels, LEDPin, NEO_GRB + NEO_KHZ800); // Initialize pixels
@@ -23,7 +23,9 @@ Adafruit_NeoPixel pixels(numPixels, LEDPin, NEO_GRB + NEO_KHZ800); // Initialize
 void setup() {
     Serial.begin(9600);
 
-    pinMode(buttonPin, INPUT);
+    pinMode(potentiometerPin, INPUT);
+    pinMode(8, OUTPUT);
+    digitalWrite(8, HIGH);
 
     //Set the pin modes for the output(LEDS) and input(temperature and UV sensors)
     pinMode(LEDPin, OUTPUT);
@@ -38,16 +40,8 @@ void loop() {
     readSensors();
     displayUV();
     displayTemperature();
-    Serial.println(mode);
 
-    if(digitalRead(buttonPin) == HIGH) {
-        if (mode == 11) {
-            mode = 0;
-        } else {
-            mode += 1;
-        }
-        delay(500);
-    }
+    mode = map(analogRead(potentiometerPin), 0, 1023, 0, 11);
 
     if (timer > timerPeriod) {
         timer = 0;
@@ -193,15 +187,13 @@ void displayTemperature() {
 }
 
 void flashColor(int startIndex, int endIndex, int r, int g, int b) {
-    if(timer < 500) {
+    if(timer < timerPeriod/2) {
         for (int i = startIndex; i < endIndex; i++) {
             pixels.setPixelColor(i, pixels.Color(r, g, b)); // Set color
-            pixels.show(); // Update the strip
         }
     } else {
         for (int i = startIndex; i < endIndex; i++) {
             pixels.setPixelColor(i, pixels.Color(0, 0, 0)); // Turn off the pixel
-            pixels.show(); // Update the strip
         }
     }
 }
