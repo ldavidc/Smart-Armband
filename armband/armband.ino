@@ -4,9 +4,14 @@ const int LEDPin = 6;
 const int numPixels = 6; // Length of LED strip
 const int brightness = 20;
 
+const int temperaturePowerPin = 2; // 2
 const int temperaturePin = 1; // A1
 const int lowTemps[4] = {40, 30, 20, 10}; // Fahrenheit, increasing in severity
 const int highTemps[4] = {70, 80, 90, 100}; // Fahrenheit, increasing in severity
+int Vo;
+float R1 = 10000; // value of R1 on board
+float logR2, R2, T;
+float c1 = 0.001129148, c2 = 0.000234125, c3 = 0.0000000876741; // Steinhart-Hart coefficients
 
 const int UVPin = 2; // A2
 const int UVThresholds[4] = {3, 5, 7, 9}; // UV index, increasing in severity
@@ -25,6 +30,8 @@ void setup() {
 
     // Set the pin modes for the output(LEDS) and input(temperature and UV sensors)
     pinMode(LEDPin, OUTPUT);
+    pinMode(temperaturePowerPin, OUTPUT);
+
     pinMode(temperaturePin, INPUT);
     pinMode(UVPin, INPUT);
 
@@ -46,11 +53,22 @@ void loop() {
 
 // Read the temperature and UV sensors
 void readSensors() {
-    temperature = analogRead(temperaturePin);
-    // Unit conversion
+    digitalWrite(temperaturePowerPin, HIGH); // Turn on the temperature sensor
+    Vo = analogRead(temperaturePin);
+    R2 = R1 * Vo/(1023 - Vo); //calculate resistance on thermistor (https://arduinomodules.info/ky-013-analog-temperature-sensor-module/)
+    logR2 = log(R2);
+    temperature = (1.0 / (c1 + c2*logR2 + c3*logR2*logR2*logR2)) * 1.05; // temperature in Kelvin
+    temperature = temperature - 273.15; //convert Kelvin to Celcius
+    temperature = (temperature * 9.0)/ 5.0 + 32.0; //convert Celcius to Farenheit
+
+    // 70->41 (convert to kelvin, do changes  there)
+    // 20->5
+
+    // 294.26 -> 278.15     1.0579
+    // 266.48 -> 258.15     1.0333
 
     UV = analogRead(UVPin);
-    // Unit conversion
+    UV = max((0.0106 * UV) - 1.3577, 0); // Unit conversion
 
     Serial.print("Temperature: ");
     Serial.print(temperature);
