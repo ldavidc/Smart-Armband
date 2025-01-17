@@ -1,13 +1,15 @@
 #include <Adafruit_NeoPixel.h>
 
 const int LEDPin = 6;
-const int numPixels = 6; // Length of LED strip
+const int numPixels = 8; // Length of LED strip
 const int brightness = 20;
 
 const int temperaturePowerPin = 2; // 2
 const int temperaturePin = 1; // A1
 const int lowTemps[4] = {40, 30, 20, 10}; // Fahrenheit, increasing in severity
 const int highTemps[4] = {70, 80, 90, 100}; // Fahrenheit, increasing in severity
+
+// Temperature conversion variables
 int Vo;
 float R1 = 10000; // value of R1 on board
 float logR2, R2, T;
@@ -16,10 +18,10 @@ float c1 = 0.001129148, c2 = 0.000234125, c3 = 0.0000000876741; // Steinhart-Har
 const int UVPin = 2; // A2
 const int UVThresholds[4] = {3, 5, 7, 9}; // UV index, increasing in severity
 
-int temperature, UV = 55; // Default values in the middle of the range
+int temperature = 55; // Default value in the middle of the range
+int UV = 0; // Default value
 int timer = 0;
 const int timerPeriod = 10;
-int mode = 0;
 
 Adafruit_NeoPixel pixels(numPixels, LEDPin, NEO_GRB + NEO_KHZ800); // Initialize pixels
 
@@ -43,6 +45,7 @@ void loop() {
     readSensors();
     displayUV();
     displayTemperature();
+    displayOnStatus(); // Display that the armband is on
 
     if (timer > timerPeriod) {
         timer = 0;
@@ -53,6 +56,7 @@ void loop() {
 
 // Read the temperature and UV sensors
 void readSensors() {
+    // Read the temperature sensor
     digitalWrite(temperaturePowerPin, HIGH); // Turn on the temperature sensor
     Vo = analogRead(temperaturePin);
     R2 = R1 * Vo/(1023 - Vo); //calculate resistance on thermistor (https://arduinomodules.info/ky-013-analog-temperature-sensor-module/)
@@ -61,12 +65,7 @@ void readSensors() {
     temperature = temperature - 273.15; //convert Kelvin to Celcius
     temperature = (temperature * 9.0)/ 5.0 + 32.0; //convert Celcius to Farenheit
 
-    // 70->41 (convert to kelvin, do changes  there)
-    // 20->5
-
-    // 294.26 -> 278.15     1.0579
-    // 266.48 -> 258.15     1.0333
-
+    // Read the UV sensor
     UV = analogRead(UVPin);
     UV = max((0.0106 * UV) - 1.3577, 0); // Unit conversion
 
@@ -98,7 +97,7 @@ void displayUV() {
     }
 
     if (UV > UVThresholds[3]) {
-        flashColor(0, numPixels / 2, 105, 65, 136); // Flash purple for all pixels
+        flashColor(0, 3, 105, 65, 136); // Flash purple for all pixels
     }
 
     pixels.show(); // Update the strip
@@ -106,44 +105,51 @@ void displayUV() {
 
 void displayTemperature() {
     // Clear temperature pixels
-    for (int i = numPixels / 2; i < numPixels; i++) {
+    for (int i = 3; i < numPixels; i++) {
         pixels.setPixelColor(i, pixels.Color(0, 0, 0)); // Turn off all pixels
     }
 
     // Light up a blue pixel for each low temperature threshold
     if (temperature < lowTemps[0]) {
-        pixels.setPixelColor(numPixels / 2, pixels.Color(173, 216, 230)); // Light blue first pixel
+        pixels.setPixelColor(3, pixels.Color(173, 216, 230)); // Light blue first pixel
     } 
 
     if (temperature < lowTemps[1]) {
-        pixels.setPixelColor(numPixels / 2 + 1, pixels.Color(90, 147, 219)); // Medium blue second pixel
+        pixels.setPixelColor(4, pixels.Color(90, 147, 219)); // Medium blue second pixel
     }
 
     if (temperature < lowTemps[2]) {
-        pixels.setPixelColor(numPixels / 2 + 2, pixels.Color(0, 0, 255)); // Blue third pixel
+        pixels.setPixelColor(5, pixels.Color(0, 0, 255)); // Blue third pixel
     }
 
     if (temperature < lowTemps[3]) {
-        flashColor(numPixels / 2, numPixels, 0, 0, 255); // Flash blue for all pixels
+        flashColor(3, 6, 0, 0, 255); // Flash blue for all pixels
     }
 
     // Light up a red pixel for each high temperature threshold
     if (temperature > highTemps[0]) {
-        pixels.setPixelColor(numPixels / 2, pixels.Color(255, 255, 0)); // Yellow first pixel
+        pixels.setPixelColor(3, pixels.Color(255, 255, 0)); // Yellow first pixel
     }
 
     if (temperature > highTemps[1]) {
-        pixels.setPixelColor(numPixels / 2 + 1, pixels.Color(255, 69, 0)); // Orange second pixel
+        pixels.setPixelColor(4, pixels.Color(255, 69, 0)); // Orange second pixel
     }
 
     if (temperature > highTemps[2]) {
-        pixels.setPixelColor(numPixels / 2 + 2, pixels.Color(255, 0, 0)); // Red third pixel
+        pixels.setPixelColor(5, pixels.Color(255, 0, 0)); // Red third pixel
     }
 
     if (temperature > highTemps[3]) {
-        flashColor(numPixels / 2, numPixels, 255, 0, 0); // Flash red for all pixels
+        flashColor(3, 6, 255, 0, 0); // Flash red for all pixels
     }
 
+    pixels.show(); // Update the strip
+}
+
+void displayOnStatus() {
+    for (int i = 6; i < 8; i++) {
+        pixels.setPixelColor(i, pixels.Color(0, 128, 0)); // Set color
+    }
     pixels.show(); // Update the strip
 }
 
